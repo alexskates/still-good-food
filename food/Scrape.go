@@ -59,6 +59,9 @@ func ScrapeSearch() ([]string, error) {
 			recipe, _ := ScrapeRecipe(recipeUrl)
 			urls = append(urls, recipeUrl)
 			fmt.Println(recipe.Name)
+
+			// Try to be courteous when scraping -- don't sent requests too quickly
+			time.Sleep(time.Second)
 		})
 
 		// Check if there is a "next" button on the page
