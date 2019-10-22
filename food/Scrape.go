@@ -58,6 +58,7 @@ func ScrapeSearch() ([]string, error) {
 			// Scrape the recipe
 			recipe, _ := ScrapeRecipe(recipeUrl)
 			urls = append(urls, recipeUrl)
+			fmt.Println(recipe.Name)
 		})
 		fmt.Println("Done")
 		// Check if there is a "next" button on the page
