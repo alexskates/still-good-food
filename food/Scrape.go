@@ -60,7 +60,7 @@ func ScrapeSearch() ([]string, error) {
 			urls = append(urls, recipeUrl)
 			fmt.Println(recipe.Name)
 		})
-		fmt.Println("Done")
+
 		// Check if there is a "next" button on the page
 		ok = doc.Find(".pager-next").Length() > 0
 		i += 1
