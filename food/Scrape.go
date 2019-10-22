@@ -1,9 +1,12 @@
 package food
 
 import (
+	"context"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"net/http"
 	"strings"
+	"time"
 )
 
 type NutritionInfo struct {
@@ -28,12 +31,32 @@ type Recipe struct {
 	Nutrition   NutritionInfo
 }
 
-func Scrape(recipe string) (Recipe, error) {
-	doc, err := goquery.NewDocument(recipe)
+func Scrape(recipeURL string) (Recipe, error) {
+
+	// Create a new context
+	// With a deadline of 500 milliseconds
+	ctx := context.Background()
+	ctx, _ = context.WithTimeout(ctx, 100*time.Millisecond)
+
+	// Make a request, that will call the google homepage
+	req, _ := http.NewRequest(http.MethodGet, recipeURL, nil)
+	// Associate the cancellable context we just created to the request
+	req = req.WithContext(ctx)
+
+	// Create a new HTTP client and execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return Recipe{}, err
 	}
 
+	// Load the response into a goquery document
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return Recipe{}, err
+	}
+
+	// Get the recipe information from the text using class names
 	name := doc.Find(".recipe-header__title").First().Text()
 
 	var ingredients []string
