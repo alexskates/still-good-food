@@ -87,6 +87,7 @@ func Scrape(recipeURL string) (Recipe, error) {
 	nutrition := NutritionInfo{
 		Kcal:      extract("calories", doc),
 		Fat:       extract("fatContent", doc),
+		Carbs:     extract("carbohydrateContent", doc),
 		Saturates: extract("saturatedFatContent", doc),
 		Sugars:    extract("sugarContent", doc),
 		Fibre:     extract("fiberContent", doc),
