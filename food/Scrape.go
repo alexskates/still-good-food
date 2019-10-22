@@ -31,21 +31,46 @@ type Recipe struct {
 	Nutrition   NutritionInfo
 }
 
-func Scrape(recipeURL string) (Recipe, error) {
+func ScrapeSearch() ([]string, error) {
 
-	// Create a new context
-	// With a deadline of 500 milliseconds
-	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, 100*time.Millisecond)
+	baseUrl := "https://www.bbcgoodfood.com/search/recipes?query=#sort=created&order=desc&page="
+	i, ok := 1, true
 
-	// Make a request, that will call the google homepage
-	req, _ := http.NewRequest(http.MethodGet, recipeURL, nil)
-	// Associate the cancellable context we just created to the request
-	req = req.WithContext(ctx)
+	var urls []string
+	for ok {
+		// Make the request to the good food search URL
+		resp, err := sendRequest(fmt.Sprintf("%s%d", baseUrl, i), 1000)
+		if err != nil {
+			return []string{}, err
+		}
 
-	// Create a new HTTP client and execute the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
+		// Load the response into a goquery document
+		doc, err := goquery.NewDocumentFromReader(resp.Body)
+		if err != nil {
+			return []string{}, err
+		}
+
+		// Search results
+		doc.Find(".teaser-item__title").Each(func(i int, s *goquery.Selection) {
+			recipeUrl, _ := s.Children().First().Attr("href")
+			recipeUrl = "https://www.bbcgoodfood.com" + recipeUrl
+
+			// Scrape the recipe
+			recipe, _ := ScrapeRecipe(recipeUrl)
+			urls = append(urls, recipeUrl)
+		})
+		fmt.Println("Done")
+		// Check if there is a "next" button on the page
+		ok = doc.Find(".pager-next").Length() > 0
+		i += 1
+	}
+	return urls, nil
+}
+
+func ScrapeRecipe(recipeUrl string) (Recipe, error) {
+
+	// Make a HTTP request to the recipeURL
+	resp, err := sendRequest(recipeUrl, 500)
 	if err != nil {
 		return Recipe{}, err
 	}
@@ -108,6 +133,25 @@ func Scrape(recipeURL string) (Recipe, error) {
 
 	return r, nil
 }
+
 func extract(itemprop string, doc *goquery.Document) string {
 	return strings.TrimSpace(doc.Find(fmt.Sprintf("span[itemprop='%s']", itemprop)).Text())
+}
+
+func sendRequest(url string, timeout int) (*http.Response, error) {
+	// Create a new context
+	// With a deadline of 500 milliseconds
+	ctx := context.Background()
+	ctx, _ = context.WithTimeout(ctx, time.Duration(timeout)*time.Millisecond)
+
+	// Make a request, that will call the google homepage
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	// Associate the cancellable context we just created to the request
+	req = req.WithContext(ctx)
+
+	// Create a new HTTP client and execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+
+	return resp, err
 }
